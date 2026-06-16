@@ -117,6 +117,24 @@ const en = {
   clearConfirm: 'Clear all saved data? This cannot be undone.',
   yesClear: 'Yes, clear everything',
 
+  // Audio runtime settings
+  runtimeMode: 'Runtime mode',
+  reliableAudio: 'Reliable Audio',
+  screenOnTimer: 'Screen-On Timer',
+  screenOnTimerWarning: 'Audio cues may be interrupted when the screen is off. Recommended only if Reliable Audio causes issues.',
+  audioCues: 'Audio Cues',
+  pacerEnabled: 'Background pacer',
+  workoutStartCue: 'Workout start cue',
+
+  // Audio mode
+  workoutTooLongForAudio: 'This workout is too long for audio mode (max 60 minutes). Shorten it or switch to Screen-On Timer mode in Settings.',
+
+  // Audio recovery
+  audioRecoveryInterrupted: 'Your workout was interrupted.',
+  audioRecoveryTrackUnavailable: 'The audio track is no longer available.',
+  audioRecoveryRestart: 'Restart Workout',
+  audioRecoveryTapToResume: 'Tap to resume playback.',
+
   // Misc
   stepCount: (n: number) => `${n} step${n > 1 ? 's' : ''}`,
   done: 'Done',
@@ -127,6 +145,9 @@ const en = {
   record: 'Rec',
   stopRec: 'Stop',
   manageRecordings: 'Custom voice recordings',
+  recordingDeleted: 'Recording deleted. Built-in cue will be used.',
+  recordingFailed: 'This recording could not be used. Please retry.',
+  maxRecordingDuration: 'Maximum recording duration reached (5 seconds).',
 };
 
 const he: TranslationKeys = {
@@ -234,6 +255,23 @@ const he: TranslationKeys = {
   clearConfirm: 'למחוק את כל הנתונים? לא ניתן לבטל פעולה זו.',
   yesClear: 'כן, מחק הכל',
 
+  // Audio runtime settings
+  runtimeMode: 'מצב הפעלה',
+  reliableAudio: 'שמע אמין',
+  screenOnTimer: 'טיימר עם מסך דלוק',
+  screenOnTimerWarning: 'הכרזות שמע עלולות להיקטע כשהמסך כבוי. מומלץ רק אם שמע אמין גורם לבעיות.',
+  audioCues: 'הכרזות שמע',
+  pacerEnabled: 'טיק רקע',
+  workoutStartCue: 'הכרזת התחלה',
+
+  workoutTooLongForAudio: 'האימון ארוך מדי למצב שמע (מקסימום 60 דקות). קצר אותו או עבור למצב טיימר עם מסך דלוק בהגדרות.',
+
+  // Audio recovery
+  audioRecoveryInterrupted: 'האימון שלך הופסק.',
+  audioRecoveryTrackUnavailable: 'קובץ השמע כבר לא זמין.',
+  audioRecoveryRestart: 'התחל אימון מחדש',
+  audioRecoveryTapToResume: 'לחץ להמשך השמעה.',
+
   stepCount: (n: number) => `${n} שלב${n > 1 ? 'ים' : ''}`,
   done: 'סיום',
   customRecordings: 'הקלטות קוליות',
@@ -243,6 +281,9 @@ const he: TranslationKeys = {
   record: 'הקלט',
   stopRec: 'עצור',
   manageRecordings: 'הקלטות קוליות מותאמות',
+  recordingDeleted: 'ההקלטה נמחקה. צליל ברירת המחדל ישמש.',
+  recordingFailed: 'לא ניתן להשתמש בהקלטה זו. נסה שוב.',
+  maxRecordingDuration: 'הגעת למשך ההקלטה המקסימלי (5 שניות).',
 };
 
 export const translations: Record<Locale, TranslationKeys> = { en, he };

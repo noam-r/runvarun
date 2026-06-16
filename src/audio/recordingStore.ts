@@ -1,20 +1,29 @@
 /**
  * IndexedDB store for custom voice recordings.
- * Each recording is keyed by a cue identifier (e.g. "step:Run", "system:workout_complete").
+ * Each recording is keyed by a cue identifier (e.g. "step-label:run", "system:last-round").
+ *
+ * Version 2: bumped to trigger onupgradeneeded after the migration service
+ * (which opens at version 1) has re-keyed legacy entries. No schema change —
+ * the object store shape is identical.
  */
 
 const DB_NAME = 'runvarun-recordings';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'recordings';
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = () => {
+    request.onupgradeneeded = (event) => {
       const db = request.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
+      const oldVersion = event.oldVersion;
+
+      if (oldVersion < 1) {
+        // Fresh install — create the recordings object store
         db.createObjectStore(STORE_NAME);
       }
+      // Version 1 → 2: object store already exists, no schema change needed.
+      // The actual re-keying of legacy entries is handled by migrationService.
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -143,13 +152,18 @@ export const recordingStore = {
   },
 };
 
-/** Build a cue key for a step announcement. */
-export function stepCueKey(label: string): string {
-  return `step:${label.trim().toLowerCase()}`;
-}
+/** Build a cue key for a step announcement (uses normalizeCueKey). */
+export { normalizeCueKey as stepCueKey } from './generation/cueKeyNormalization';
 
-/** System cue keys. */
+/** System cue keys (re-exported from cueKeyNormalization). */
+export {
+  SYSTEM_CUE_LAST_ROUND,
+  SYSTEM_CUE_COMPLETE,
+  SYSTEM_CUE_START,
+} from './generation/cueKeyNormalization';
+
+/** Legacy-compatible system cue keys object for backward compatibility. */
 export const SYSTEM_CUE_KEYS = {
-  lastRound: 'system:last_round',
-  workoutComplete: 'system:workout_complete',
+  lastRound: 'system:last-round',
+  workoutComplete: 'system:complete',
 } as const;

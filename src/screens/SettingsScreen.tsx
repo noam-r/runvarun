@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import type { AppSettings } from '../domain/types';
+import { useState, useEffect } from 'react';
+import type { AppSettings, AppSettingsV2 } from '../domain/types';
 import { vibrationService } from '../audio/vibrationService';
 import { speechService } from '../audio/speechService';
 import { wakeLockService } from '../pwa/wakeLockService';
+import { storageService } from '../storage/storageService';
 import { useI18n } from '../i18n';
 
 type Props = {
@@ -18,7 +19,19 @@ export function SettingsScreen({ settings, onUpdate, onBack, onRecordings, onRes
   const [confirmClear, setConfirmClear] = useState(false);
   const [showDataSection, setShowDataSection] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState<'idle' | 'testing' | 'success' | 'failed'>('idle');
+  const [settingsV2, setSettingsV2] = useState<AppSettingsV2>(() => storageService.loadSettingsV2());
   const { t } = useI18n();
+
+  // Keep v2 settings in sync if the component re-mounts
+  useEffect(() => {
+    setSettingsV2(storageService.loadSettingsV2());
+  }, []);
+
+  function updateV2(patch: Partial<AppSettingsV2>) {
+    const updated = { ...settingsV2, ...patch };
+    setSettingsV2(updated);
+    storageService.saveSettingsV2(updated);
+  }
 
   async function handleTestVoice() {
     setVoiceStatus('testing');
@@ -55,67 +68,148 @@ export function SettingsScreen({ settings, onUpdate, onBack, onRecordings, onRes
           </label>
         </div>
 
+        {/* Runtime Mode Section */}
         <div className="settings-section">
-          <h3>{t.audio}</h3>
-
-          <div className="setting-row setting-row--action">
-            <button className="btn btn-secondary" onClick={handleTestVoice} disabled={voiceStatus === 'testing'}>
-              {voiceStatus === 'testing' ? t.testing : t.testVoice}
-            </button>
-            {voiceStatus === 'success' && <span className="voice-status voice-status--ok">{t.voiceReady}</span>}
-            {voiceStatus === 'failed' && <span className="voice-status voice-status--warn">{t.voiceMayNotWork}</span>}
-          </div>
-
-          <div className="setting-row setting-row--action">
-            <button className="btn btn-secondary" onClick={onRecordings}>
-              {t.manageRecordings}
-            </button>
-          </div>
-
+          <h3>{t.runtimeMode}</h3>
           <label className="setting-row">
-            <span>{t.voiceCues}</span>
-            <input type="checkbox" checked={settings.voiceCuesEnabled} onChange={() => toggle('voiceCuesEnabled')} />
-          </label>
-          <label className="setting-row">
-            <span>{t.voiceLanguage}</span>
+            <span>{t.runtimeMode}</span>
             <select
-              value={settings.voiceLanguage}
-              onChange={(e) => onUpdate({ ...settings, voiceLanguage: e.target.value as AppSettings['voiceLanguage'] })}
+              value={settingsV2.runtimeMode}
+              onChange={(e) => updateV2({ runtimeMode: e.target.value as AppSettingsV2['runtimeMode'] })}
             >
-              <option value="system">{t.systemDefault}</option>
-              <option value="en">{t.english}</option>
-              <option value="he">{t.hebrew}</option>
+              <option value="reliable-audio">{t.reliableAudio}</option>
+              <option value="screen-on-timer">{t.screenOnTimer}</option>
             </select>
           </label>
-          <label className="setting-row">
-            <span>{t.beepFallbackSetting}</span>
-            <input type="checkbox" checked={settings.beepCuesEnabled} onChange={() => toggle('beepCuesEnabled')} />
-          </label>
-          <label className="setting-row">
-            <span>{t.countdownCue}</span>
-            <select
-              value={settings.countdownCue}
-              onChange={(e) => onUpdate({ ...settings, countdownCue: e.target.value as AppSettings['countdownCue'] })}
-            >
-              <option value="off">{t.countdownOff}</option>
-              <option value="last3seconds">{t.countdownLast3}</option>
-            </select>
-          </label>
-          <label className="setting-row">
-            <span>{t.finalRoundCue}</span>
-            <input type="checkbox" checked={settings.finalRoundCueEnabled} onChange={() => toggle('finalRoundCueEnabled')} />
-          </label>
-          <label className="setting-row">
-            <span>{t.completionCue}</span>
-            <input type="checkbox" checked={settings.completionCueEnabled} onChange={() => toggle('completionCueEnabled')} />
-          </label>
-          {vibrationService.isSupported() && (
-            <label className="setting-row">
-              <span>{t.vibration}</span>
-              <input type="checkbox" checked={settings.vibrationEnabled} onChange={() => toggle('vibrationEnabled')} />
-            </label>
+          {settingsV2.runtimeMode === 'screen-on-timer' && (
+            <p className="setting-warning">{t.screenOnTimerWarning}</p>
           )}
         </div>
+
+        {/* Audio Cues Section — shown when runtime mode is reliable-audio */}
+        {settingsV2.runtimeMode === 'reliable-audio' && (
+          <div className="settings-section">
+            <h3>{t.audioCues}</h3>
+            <label className="setting-row">
+              <span>{t.pacerEnabled}</span>
+              <input
+                type="checkbox"
+                checked={settingsV2.pacerEnabled}
+                onChange={() => updateV2({ pacerEnabled: !settingsV2.pacerEnabled })}
+              />
+            </label>
+            <label className="setting-row">
+              <span>{t.countdownCue}</span>
+              <select
+                value={settingsV2.countdownCue}
+                onChange={(e) => updateV2({ countdownCue: e.target.value as AppSettingsV2['countdownCue'] })}
+              >
+                <option value="off">{t.countdownOff}</option>
+                <option value="last-3-seconds">{t.countdownLast3}</option>
+              </select>
+            </label>
+            <label className="setting-row">
+              <span>{t.finalRoundCue}</span>
+              <input
+                type="checkbox"
+                checked={settingsV2.finalRoundCueEnabled}
+                onChange={() => updateV2({ finalRoundCueEnabled: !settingsV2.finalRoundCueEnabled })}
+              />
+            </label>
+            <label className="setting-row">
+              <span>{t.workoutStartCue}</span>
+              <input
+                type="checkbox"
+                checked={settingsV2.workoutStartCueEnabled}
+                onChange={() => updateV2({ workoutStartCueEnabled: !settingsV2.workoutStartCueEnabled })}
+              />
+            </label>
+            <label className="setting-row">
+              <span>{t.completionCue}</span>
+              <input
+                type="checkbox"
+                checked={settingsV2.completionCueEnabled}
+                onChange={() => updateV2({ completionCueEnabled: !settingsV2.completionCueEnabled })}
+              />
+            </label>
+          </div>
+        )}
+
+        {/* Legacy Audio Section — shown when screen-on-timer mode */}
+        {settingsV2.runtimeMode === 'screen-on-timer' && (
+          <div className="settings-section">
+            <h3>{t.audio}</h3>
+
+            <div className="setting-row setting-row--action">
+              <button className="btn btn-secondary" onClick={handleTestVoice} disabled={voiceStatus === 'testing'}>
+                {voiceStatus === 'testing' ? t.testing : t.testVoice}
+              </button>
+              {voiceStatus === 'success' && <span className="voice-status voice-status--ok">{t.voiceReady}</span>}
+              {voiceStatus === 'failed' && <span className="voice-status voice-status--warn">{t.voiceMayNotWork}</span>}
+            </div>
+
+            <div className="setting-row setting-row--action">
+              <button className="btn btn-secondary" onClick={onRecordings}>
+                {t.manageRecordings}
+              </button>
+            </div>
+
+            <label className="setting-row">
+              <span>{t.voiceCues}</span>
+              <input type="checkbox" checked={settings.voiceCuesEnabled} onChange={() => toggle('voiceCuesEnabled')} />
+            </label>
+            <label className="setting-row">
+              <span>{t.voiceLanguage}</span>
+              <select
+                value={settings.voiceLanguage}
+                onChange={(e) => onUpdate({ ...settings, voiceLanguage: e.target.value as AppSettings['voiceLanguage'] })}
+              >
+                <option value="system">{t.systemDefault}</option>
+                <option value="en">{t.english}</option>
+                <option value="he">{t.hebrew}</option>
+              </select>
+            </label>
+            <label className="setting-row">
+              <span>{t.beepFallbackSetting}</span>
+              <input type="checkbox" checked={settings.beepCuesEnabled} onChange={() => toggle('beepCuesEnabled')} />
+            </label>
+            <label className="setting-row">
+              <span>{t.countdownCue}</span>
+              <select
+                value={settings.countdownCue}
+                onChange={(e) => onUpdate({ ...settings, countdownCue: e.target.value as AppSettings['countdownCue'] })}
+              >
+                <option value="off">{t.countdownOff}</option>
+                <option value="last3seconds">{t.countdownLast3}</option>
+              </select>
+            </label>
+            <label className="setting-row">
+              <span>{t.finalRoundCue}</span>
+              <input type="checkbox" checked={settings.finalRoundCueEnabled} onChange={() => toggle('finalRoundCueEnabled')} />
+            </label>
+            <label className="setting-row">
+              <span>{t.completionCue}</span>
+              <input type="checkbox" checked={settings.completionCueEnabled} onChange={() => toggle('completionCueEnabled')} />
+            </label>
+            {vibrationService.isSupported() && (
+              <label className="setting-row">
+                <span>{t.vibration}</span>
+                <input type="checkbox" checked={settings.vibrationEnabled} onChange={() => toggle('vibrationEnabled')} />
+              </label>
+            )}
+          </div>
+        )}
+
+        {/* Recordings button — always accessible in reliable-audio mode */}
+        {settingsV2.runtimeMode === 'reliable-audio' && (
+          <div className="settings-section">
+            <div className="setting-row setting-row--action">
+              <button className="btn btn-secondary" onClick={onRecordings}>
+                {t.manageRecordings}
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="settings-section">
           <h3>{t.display}</h3>
@@ -126,6 +220,12 @@ export function SettingsScreen({ settings, onUpdate, onBack, onRecordings, onRes
             </label>
           ) : (
             <p className="setting-unavailable">{t.wakeLockUnsupported}</p>
+          )}
+          {vibrationService.isSupported() && (
+            <label className="setting-row">
+              <span>{t.vibration}</span>
+              <input type="checkbox" checked={settings.vibrationEnabled} onChange={() => toggle('vibrationEnabled')} />
+            </label>
           )}
         </div>
 

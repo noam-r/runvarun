@@ -5,6 +5,7 @@ import { startWorkout } from '../engine/timerEngine';
 import { cueService } from '../audio/cueService';
 import { recordingStore, stepCueKey, SYSTEM_CUE_KEYS } from '../audio/recordingStore';
 import { wakeLockService } from '../pwa/wakeLockService';
+import { storageService } from '../storage/storageService';
 import { useI18n } from '../i18n';
 
 type Props = {
@@ -12,6 +13,7 @@ type Props = {
   selectedPreset: WorkoutPreset | null;
   settings: AppSettings;
   onStart: () => void;
+  onStartAudio?: (preset: WorkoutPreset) => void;
   onSelectPreset: (id: string) => void;
   onEdit: (id: string) => void;
   onNew: () => void;
@@ -26,6 +28,7 @@ export function HomeScreen({
   selectedPreset,
   settings,
   onStart,
+  onStartAudio,
   onSelectPreset,
   onEdit,
   onNew,
@@ -37,10 +40,29 @@ export function HomeScreen({
   const [showPicker, setShowPicker] = useState(false);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [audioModeError, setAudioModeError] = useState<string | null>(null);
   const { t } = useI18n();
 
   async function handleStart() {
     if (!selectedPreset) return;
+    setAudioModeError(null);
+
+    const settingsV2 = storageService.loadSettingsV2();
+
+    if (settingsV2.runtimeMode === 'reliable-audio') {
+      // Audio mode: check duration guardrails, then delegate to audio flow
+      const duration = totalWorkoutDuration(selectedPreset.steps, selectedPreset.repeatCount);
+      if (duration > 3600) {
+        setAudioModeError(t.workoutTooLongForAudio);
+        return;
+      }
+      if (onStartAudio) {
+        onStartAudio(selectedPreset);
+      }
+      return;
+    }
+
+    // Screen-on-timer mode: existing legacy flow
     const now = Date.now();
     const result = startWorkout(selectedPreset, now);
     if (!result) return;
@@ -93,6 +115,9 @@ export function HomeScreen({
         <button className="start-button" onClick={handleStart} aria-label={t.startWorkout}>
           <span className="start-button__label">{t.start}</span>
         </button>
+        {audioModeError && (
+          <p className="home-start-area__error" role="alert">{audioModeError}</p>
+        )}
       </div>
 
       {/* Current workout summary */}

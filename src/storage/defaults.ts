@@ -1,4 +1,4 @@
-import type { WorkoutPreset, AppSettings, RunVaRunStorage } from '../domain/types';
+import type { WorkoutPreset, AppSettings, AppSettingsV2, RunVaRunStorage, RunVaRunStorageV2 } from '../domain/types';
 
 export const DEFAULT_SETTINGS: AppSettings = {
   voiceCuesEnabled: true,
@@ -59,5 +59,36 @@ export function createDefaultStorage(): RunVaRunStorage {
     lastUsedPresetId: presets[0].id,
     activeWorkout: null,
     settings: DEFAULT_SETTINGS,
+  };
+}
+
+export const DEFAULT_SETTINGS_V2: AppSettingsV2 = {
+  // Preserved from v1
+  vibrationEnabled: false,
+  keepScreenAwake: true,
+  uiLanguage: 'en',
+
+  // Audio runtime (new in v2)
+  runtimeMode: 'reliable-audio',
+  countdownCue: 'last-3-seconds',
+  finalRoundCueEnabled: true,
+  completionCueEnabled: true,
+  workoutStartCueEnabled: true,
+  pacerEnabled: true,
+
+  // Legacy (kept for screen-on-timer mode)
+  voiceCuesEnabled: true,
+  beepCuesEnabled: true,
+  voiceLanguage: 'system',
+};
+
+export function createDefaultStorageV2(): RunVaRunStorageV2 {
+  const presets = createStarterPresets();
+  return {
+    schemaVersion: 2,
+    presets,
+    lastUsedPresetId: presets[0].id,
+    settings: DEFAULT_SETTINGS_V2,
+    activeAudioWorkout: null,
   };
 }
